@@ -223,7 +223,23 @@
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // ── Loading state helpers ──────────────────────────────────────────────
+    // ── Escape HTML (XSS safe) ─────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // ── Render citation markers → clickable superscripts ──────────────────
+    function linkCitations(html) {
+      return html.replace(/\[(\d+)\]/g,
+        '<sup class="citation" onclick="scrollToSource($1)">[$1]</sup>');
+    }
+
+    // ── Loading state (button + textarea only) ─────────────────────────────
     let slowTimer = null;
 
     function setLoading(on) {
@@ -239,27 +255,7 @@
           stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10"
           class="spin" style="animation:spin 0.8s linear infinite;transform-origin:center"/>`;
         label.textContent = 'Searching…';
-
-        // Show slow-response hint after 3 s
-        slowTimer = setTimeout(() => {
-          label.textContent = 'Still searching…';
-        }, 3000);
-
-        document.getElementById('result').innerHTML = `
-          <div class="flex flex-col items-center gap-3 py-16 text-gray-400">
-            <svg class="w-8 h-8 spin" fill="none" stroke="currentColor" stroke-width="2"
-                 viewBox="0 0 24 24" style="animation:spin 0.8s linear infinite;transform-origin:center">
-              <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/>
-            </svg>
-            <p id="loading-msg" class="text-sm font-medium">Searching and generating answer…</p>
-          </div>`;
-
-        // Update loading message after 3 s
-        setTimeout(() => {
-          const msg = document.getElementById('loading-msg');
-          if (msg) msg.textContent = 'Still searching… this may take a moment';
-        }, 3000);
-
+        slowTimer = setTimeout(() => { label.textContent = 'Still searching…'; }, 3000);
       } else {
         clearTimeout(slowTimer);
         btn.disabled = false;
@@ -275,7 +271,6 @@
       const badgeCls = sourceBadgeClass(r.source);
       const sourceLabel = r.source.charAt(0).toUpperCase() + r.source.slice(1);
 
-      // Author line
       let authorLine = '';
       if (r.authors_json && r.authors_json.length > 0) {
         const first = r.authors_json[0];
@@ -285,32 +280,22 @@
         authorLine = r.author;
       }
 
-      // Date
-      const date = fmtDate(r.published_at) || fmtDate(r.collected_at) || '';
-
-      // Link: prefer full_text_url for academic, else url
-      const href = r.full_text_url || r.url || '#';
-
-      // Description snippet
+      const date    = fmtDate(r.published_at) || fmtDate(r.collected_at) || '';
+      const href    = r.full_text_url || r.url || '#';
       const snippet = r.description
         ? r.description.slice(0, 280) + (r.description.length > 280 ? '…' : '')
         : (r.content_body ? r.content_body.slice(0, 280) + '…' : '');
-
-      // Score bar (0–100%)
-      const scoreW = Math.round((r.combined_score || 0) * 100);
+      const scoreW  = Math.round((r.combined_score || 0) * 100);
 
       return `
         <div id="source-${rank}"
              class="bg-white rounded-xl border border-gray-200 p-4 scroll-mt-20 hover:border-indigo-300 transition">
           <div class="flex items-start gap-3">
-            <!-- Rank -->
             <span class="flex-none mt-0.5 w-7 h-7 rounded-full bg-indigo-50 text-indigo-700
                          text-xs font-bold flex items-center justify-center border border-indigo-200">
               ${rank}
             </span>
-
             <div class="flex-1 min-w-0">
-              <!-- Title row -->
               <div class="flex flex-wrap items-start gap-2 mb-1">
                 <span class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${badgeCls}">
                   ${sourceLabel}
@@ -318,7 +303,6 @@
                 ${r.open_access ? `<span class="inline-flex items-center text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5">🔓 open access</span>` : ''}
                 ${r.doi ? `<span class="text-xs text-gray-400 font-mono truncate max-w-xs">DOI: ${r.doi}</span>` : ''}
               </div>
-
               <a href="${href}" target="_blank" rel="noopener noreferrer"
                  class="text-sm font-semibold text-gray-900 hover:text-indigo-700 leading-snug
                         line-clamp-2 block mb-1 transition">
@@ -329,17 +313,12 @@
                         d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
                 </svg>
               </a>
-
-              <!-- Meta line -->
               <div class="text-xs text-gray-500 flex flex-wrap gap-x-2 gap-y-0.5 mb-2">
                 ${authorLine ? `<span>${escHtml(authorLine)}</span>` : ''}
                 ${r.journal ? `<span>· ${escHtml(r.journal)}</span>` : ''}
                 ${date ? `<span>· ${date}</span>` : ''}
               </div>
-
               ${snippet ? `<p class="text-xs text-gray-600 leading-relaxed">${escHtml(snippet)}</p>` : ''}
-
-              <!-- Score bar -->
               <div class="mt-3 flex items-center gap-2">
                 <div class="score-bar-bg flex-1">
                   <div class="score-bar-fill" style="width:${scoreW}%"></div>
@@ -353,28 +332,192 @@
         </div>`;
     }
 
-    // ── Escape HTML ────────────────────────────────────────────────────────
-    function escHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    // ══════════════════════════════════════════════════════════════════════
+    // STREAMING UI — progressive rendering helpers
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── Set up the skeleton divs that streaming fills progressively ────────
+    function resetUI() {
+      document.getElementById('result').innerHTML = `
+        <!-- Stage progress bar -->
+        <div id="stream-progress" class="hidden mb-5 bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+          <div id="stage-spinner-row" class="flex items-center gap-3 text-sm text-gray-600 mb-3">
+            <svg class="w-4 h-4 flex-none spin" fill="none" stroke="currentColor" stroke-width="2"
+                 viewBox="0 0 24 24" style="animation:spin 0.8s linear infinite;transform-origin:center">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/>
+            </svg>
+            <span id="stage-label" class="font-medium">Searching…</span>
+            <span id="stage-elapsed" class="text-gray-400 text-xs ml-auto"></span>
+          </div>
+          <!-- Stage dots -->
+          <div class="flex items-center gap-1.5 flex-wrap text-xs">
+            <span data-stage="embedding" class="px-2 py-0.5 rounded text-gray-400">Embedding</span>
+            <span class="text-gray-300">→</span>
+            <span data-stage="semantic"  class="px-2 py-0.5 rounded text-gray-400">Semantic</span>
+            <span class="text-gray-300">→</span>
+            <span data-stage="keyword"   class="px-2 py-0.5 rounded text-gray-400">Keyword</span>
+            <span class="text-gray-300">→</span>
+            <span data-stage="merge"     class="px-2 py-0.5 rounded text-gray-400">Merge</span>
+            <span class="text-gray-300">→</span>
+            <span data-stage="agent"     class="px-2 py-0.5 rounded text-gray-400">Agent</span>
+          </div>
+          <!-- Live agent activity log -->
+          <div id="agent-log"
+               class="hidden mt-3 text-xs text-gray-500 space-y-1 border-l-2 border-indigo-200 pl-3">
+          </div>
+        </div>
+
+        <!-- Answer block: populated by renderAnswerBlock on the summary event -->
+        <div id="answer-section" class="hidden mb-6"></div>
+
+        <!-- Source cards: populated by renderSourceCards on the results event -->
+        <div id="sources-section" class="hidden"></div>
+
+        <!-- Timing footer: populated by updateTimingBadge on the done event -->
+        <div id="timing-footer" class="hidden mt-6 text-xs text-gray-400 flex flex-wrap gap-x-3 gap-y-1 justify-end"></div>
+      `;
     }
 
-    // ── Render citation markers → clickable superscripts ──────────────────
-    function linkCitations(html) {
-      return html.replace(/\[(\d+)\]/g,
-        '<sup class="citation" onclick="scrollToSource($1)">[$1]</sup>');
+    // ── Show / hide the progress panel ────────────────────────────────────
+    function showProgress() {
+      const p = document.getElementById('stream-progress');
+      if (p) p.classList.remove('hidden');
     }
 
-    // ── Render full results ────────────────────────────────────────────────
-    function renderResults(data, query) {
+    function hideProgress() {
+      // Collapse the spinner row but keep the agent log visible
+      const row = document.getElementById('stage-spinner-row');
+      if (row) row.classList.add('hidden');
+    }
+
+    // ── Advance stage dots ─────────────────────────────────────────────────
+    function updateStageUI(stage, message, elapsedMs) {
+      const label   = document.getElementById('stage-label');
+      const elapsed = document.getElementById('stage-elapsed');
+      if (label)   label.textContent   = message;
+      if (elapsed) elapsed.textContent = elapsedMs ? `${elapsedMs}ms` : '';
+
+      const order = ['embedding', 'semantic', 'keyword', 'merge', 'agent'];
+      const idx   = order.indexOf(stage);
+
+      order.forEach((s, i) => {
+        const el = document.querySelector(`[data-stage="${s}"]`);
+        if (!el) return;
+        // Reset classes then apply state
+        el.className = 'px-2 py-0.5 rounded text-xs ';
+        if (i < idx) {
+          el.classList.add('text-green-600', 'font-medium');  // done
+        } else if (i === idx) {
+          el.classList.add('text-indigo-600', 'font-semibold', 'bg-indigo-50');  // active
+        } else {
+          el.classList.add('text-gray-400');  // pending
+        }
+      });
+    }
+
+    // ── Append a line to the live agent log ───────────────────────────────
+    function appendAgentLog(message) {
+      const log = document.getElementById('agent-log');
+      if (!log) return;
+      log.classList.remove('hidden');
+      const row = document.createElement('div');
+      row.className = 'flex items-start gap-1.5';
+      row.innerHTML = `
+        <span class="text-indigo-400 flex-none mt-0.5">›</span>
+        <span>${escHtml(message)}</span>`;
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // ── Render source cards (called on `results` SSE event) ───────────────
+    function renderSourceCards(results, searchMode, searchTimeMs) {
+      const section = document.getElementById('sources-section');
+      if (!section) return;
+
+      if (!results || results.length === 0) {
+        // No results — show message in answer-section
+        const ans = document.getElementById('answer-section');
+        if (ans) {
+          ans.innerHTML = `
+            <div class="rounded-xl bg-gray-50 border border-gray-200 p-5 text-center text-gray-500">
+              <p class="font-medium">No results found</p>
+              <p class="text-sm mt-1">Try rephrasing your question or removing filters.</p>
+            </div>`;
+          ans.classList.remove('hidden');
+        }
+        return;
+      }
+
+      let html = `
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-gray-600 font-semibold text-sm uppercase tracking-wide">Sources</span>
+          <span class="h-px flex-1 bg-gray-200"></span>
+          <span class="text-xs text-gray-400">${results.length} result${results.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="flex flex-col gap-3">`;
+
+      results.forEach((r, i) => { html += buildSourceCard(r, i + 1); });
+      html += '</div>';
+
+      section.innerHTML = html;
+      section.classList.remove('hidden');
+    }
+
+    // ── Render the answer block (called on `summary` SSE event) ───────────
+    function renderAnswerBlock(text) {
+      const section = document.getElementById('answer-section');
+      if (!section) return;
+
+      if (!text) {
+        section.innerHTML = `
+          <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-amber-800 text-sm">
+            <span class="font-semibold">Summary unavailable</span> — search results are shown below.
+          </div>`;
+      } else {
+        const rendered = DOMPurify.sanitize(marked.parse(text));
+        const linked   = linkCitations(rendered);
+        section.innerHTML = `
+          <div class="bg-white rounded-2xl border border-indigo-200 shadow-sm p-5">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-indigo-600 font-semibold text-sm uppercase tracking-wide">Answer</span>
+              <span class="h-px flex-1 bg-indigo-100"></span>
+            </div>
+            <div id="answer-text" class="text-sm text-gray-800 leading-relaxed prose">
+              ${linked}
+            </div>
+          </div>`;
+      }
+      section.classList.remove('hidden');
+    }
+
+    // ── Update timing footer (called on `done` SSE event) ─────────────────
+    function updateTimingBadge({ search_time_ms, llm_time_ms, search_mode, agent_iterations }) {
+      const footer = document.getElementById('timing-footer');
+      if (!footer) return;
+
+      const searchSec  = search_time_ms != null ? (search_time_ms / 1000).toFixed(2) : '?';
+      const llmLabel   = llm_time_ms != null ? ` · answer ${(llm_time_ms / 1000).toFixed(1)}s` : '';
+      const modeLabel  = search_mode || 'search';
+      const agentLabel = agent_iterations != null ? ` · agent ×${agent_iterations}` : '';
+
+      footer.innerHTML = `
+        <span class="font-medium ${modeLabel === 'hybrid' ? 'text-indigo-400' : 'text-gray-400'}">
+          ${modeLabel}
+        </span>
+        <span>search ${searchSec}s${llmLabel}${agentLabel}</span>
+        <span>· Powered by autism-search + Claude</span>`;
+      footer.classList.remove('hidden');
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // FALLBACK — one-shot blocking fetch (used when EventSource unavailable
+    // or when the stream errors before any results arrive)
+    // ══════════════════════════════════════════════════════════════════════
+
+    function renderResults(data) {
       const { results, total, search_mode, search_time_ms, summary, llm_time_ms } = data;
-
       let html = '';
 
-      // ── Summary / answer block ──────────────────────────────────────────
       if (summary) {
         const rendered = DOMPurify.sanitize(marked.parse(summary));
         const linked   = linkCitations(rendered);
@@ -395,14 +538,12 @@
             <p class="text-sm mt-1">Try rephrasing your question or removing filters.</p>
           </div>`;
       } else {
-        // results exist but no LLM summary (claude -p unavailable)
         html += `
           <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-6 text-amber-800 text-sm">
             <span class="font-semibold">Summary unavailable</span> — search results are shown below.
           </div>`;
       }
 
-      // ── Source cards ────────────────────────────────────────────────────
       if (results && results.length > 0) {
         html += `
           <div class="flex items-center gap-2 mb-3">
@@ -411,20 +552,12 @@
             <span class="text-xs text-gray-400">${total} result${total !== 1 ? 's' : ''}</span>
           </div>
           <div class="flex flex-col gap-3">`;
-
-        results.forEach((r, i) => {
-          html += buildSourceCard(r, i + 1);
-        });
-
-        html += `</div>`;
+        results.forEach((r, i) => { html += buildSourceCard(r, i + 1); });
+        html += '</div>';
       }
 
-      // ── Footer ──────────────────────────────────────────────────────────
       const searchSec = (search_time_ms / 1000).toFixed(2);
-      const llmLabel  = llm_time_ms != null
-        ? ` · answer ${(llm_time_ms / 1000).toFixed(1)}s`
-        : '';
-
+      const llmLabel  = llm_time_ms != null ? ` · answer ${(llm_time_ms / 1000).toFixed(1)}s` : '';
       html += `
         <div class="mt-6 text-xs text-gray-400 flex flex-wrap gap-x-3 gap-y-1 justify-end">
           <span class="font-medium ${search_mode === 'hybrid' ? 'text-indigo-400' : 'text-gray-400'}">
@@ -437,23 +570,10 @@
       document.getElementById('result').innerHTML = html;
     }
 
-    // ── Main search function ───────────────────────────────────────────────
-    async function doSearch() {
-      const question = document.getElementById('question').value.trim();
-      if (!question) {
-        document.getElementById('question').focus();
-        return;
-      }
-
-      const source = document.getElementById('filter-source').value;
-      const days   = document.getElementById('filter-days').value;
-      const limit  = document.getElementById('filter-limit').value;
-
+    async function fallbackFetch(question, source, days, limit) {
       const params = new URLSearchParams({ q: question, limit });
       if (source) params.set('source', source);
       if (days)   params.set('days', days);
-
-      setLoading(true);
 
       try {
         const resp = await fetch(API_BASE + '/api/search?' + params.toString());
@@ -467,15 +587,112 @@
           return;
         }
         const data = await resp.json();
-        renderResults(data, question);
+        renderResults(data);
       } catch (err) {
         document.getElementById('result').innerHTML = `
           <div class="rounded-xl bg-red-50 border border-red-200 p-4 text-red-800 text-sm">
             <span class="font-semibold">Network error:</span> Could not reach the search service.
           </div>`;
-      } finally {
-        setLoading(false);
       }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // MAIN SEARCH — EventSource first, fallbackFetch if unavailable/error
+    // ══════════════════════════════════════════════════════════════════════
+
+    async function doSearch() {
+      const question = document.getElementById('question').value.trim();
+      if (!question) {
+        document.getElementById('question').focus();
+        return;
+      }
+
+      const source = document.getElementById('filter-source').value;
+      const days   = document.getElementById('filter-days').value;
+      const limit  = document.getElementById('filter-limit').value;
+
+      setLoading(true);
+      resetUI();
+
+      // ── No EventSource support → blocking fetch ────────────────────────
+      if (typeof EventSource === 'undefined') {
+        await fallbackFetch(question, source, days, limit);
+        setLoading(false);
+        return;
+      }
+
+      // ── Build URL (conditional params — never pass null/undefined) ──────
+      const params = new URLSearchParams({ q: question, limit });
+      if (source) params.set('source', source);
+      if (days)   params.set('days', days);
+
+      showProgress();
+
+      const streamUrl = `${API_BASE}/api/search/stream?${params}`;
+      const es = new EventSource(streamUrl);
+
+      let streamGotResults = false;
+      let lastSearchTimeMs = null;
+      let lastSearchMode   = null;
+
+      // ── stage: advance progress dots ───────────────────────────────────
+      es.addEventListener('stage', (e) => {
+        const d = JSON.parse(e.data);
+        updateStageUI(d.stage, d.message, d.elapsed_ms);
+      });
+
+      // ── results: render source cards immediately (before LLM finishes) ─
+      es.addEventListener('results', (e) => {
+        const d = JSON.parse(e.data);
+        streamGotResults = true;
+        lastSearchTimeMs = d.search_time_ms;
+        lastSearchMode   = d.search_mode;
+        renderSourceCards(d.results, d.search_mode, d.search_time_ms);
+      });
+
+      // ── agent_activity: append to live log ────────────────────────────
+      es.addEventListener('agent_activity', (e) => {
+        const d = JSON.parse(e.data);
+        appendAgentLog(d.message);
+      });
+
+      // ── summary: render answer block ───────────────────────────────────
+      es.addEventListener('summary', (e) => {
+        const d = JSON.parse(e.data);
+        renderAnswerBlock(d.text);
+      });
+
+      // ── done: timing footer, hide spinner, close stream ────────────────
+      es.addEventListener('done', (e) => {
+        const d = JSON.parse(e.data);
+        hideProgress();
+        updateTimingBadge({
+          search_time_ms:   lastSearchTimeMs,
+          llm_time_ms:      d.llm_time_ms,
+          search_mode:      lastSearchMode,
+          agent_iterations: d.agent_iterations,
+        });
+        setLoading(false);
+        es.close();
+      });
+
+      // ── error: fall back to blocking fetch if stream never delivered results
+      es.addEventListener('error', (e) => {
+        es.close();
+        if (!streamGotResults) {
+          // Stream never delivered results — fall back to blocking fetch
+          fallbackFetch(question, source, days, limit).finally(() => setLoading(false));
+        } else {
+          // Partial stream — hide spinner, keep whatever was already rendered
+          hideProgress();
+          setLoading(false);
+          // Show amber notice if no answer block arrived yet
+          const ans = document.getElementById('answer-section');
+          if (ans && ans.classList.contains('hidden')) {
+            renderAnswerBlock(null);
+          }
+        }
+      });
     }
 
     // ── Keyboard shortcut: Cmd/Ctrl+Enter ─────────────────────────────────
