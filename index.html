@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Autism Q&A Search</title>
+  <title>Autism Q&amp;A + Daily Log</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -49,6 +49,81 @@
     #answer-text p { margin-bottom: 0.6em; }
     #answer-text strong { font-weight: 700; }
     #answer-text em { font-style: italic; }
+
+    /* ── Daily Log shared styles ──────────────────────────────────── */
+    .dl-card {
+      background: white; border-radius: 1rem; border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 1.25rem;
+    }
+    .dl-section-title {
+      font-weight: 700; font-size: 0.95rem; color: #374151;
+      display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem;
+    }
+    .dl-btn-secondary {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 1rem; border-radius: 0.65rem;
+      border: 1.5px solid #e5e7eb; font-size: 0.82rem; font-weight: 500;
+      color: #374151; background: white; cursor: pointer; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .dl-btn-secondary:hover { border-color: #a5b4fc; color: #4338ca; background: #eef2ff; }
+    .dl-btn-secondary.recording { border-color: #f87171; color: #dc2626; background: #fef2f2; }
+
+    .dl-emoji-btn {
+      font-size: 1.75rem; padding: 0.4rem 0.6rem; border-radius: 0.75rem;
+      border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
+      background: transparent; line-height: 1;
+    }
+    .dl-emoji-btn:hover { background: #f3f4f6; }
+    .dl-emoji-btn.selected {
+      border-color: #818cf8; background: #eef2ff;
+      transform: scale(1.15);
+    }
+
+    .dl-toggle-btn {
+      flex: 1; padding: 0.65rem 0.5rem; border-radius: 0.75rem;
+      border: 2px solid #e5e7eb; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; background: white; color: #6b7280;
+    }
+    .dl-toggle-btn:hover { border-color: #a5b4fc; color: #4338ca; }
+    .dl-toggle-btn.selected-yes { border-color: #6366f1; background: #eef2ff; color: #3730a3; }
+    .dl-toggle-btn.selected-no  { border-color: #6b7280; background: #f9fafb; color: #374151; }
+    .dl-toggle-btn.selected-taken  { border-color: #22c55e; background: #f0fdf4; color: #15803d; }
+    .dl-toggle-btn.selected-missed { border-color: #ef4444; background: #fef2f2; color: #dc2626; }
+
+    .dl-checkbox-label {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.45rem 0.75rem; border-radius: 0.65rem;
+      border: 1.5px solid #e5e7eb; font-size: 0.82rem; cursor: pointer;
+      transition: all 0.15s; user-select: none;
+    }
+    .dl-checkbox-label:has(input:checked) {
+      border-color: #818cf8; background: #eef2ff; color: #3730a3;
+    }
+    .dl-checkbox-label input { accent-color: #6366f1; width: 14px; height: 14px; }
+
+    .dl-input {
+      width: 100%; border: 1.5px solid #e5e7eb; border-radius: 0.5rem;
+      padding: 0.45rem 0.65rem; font-size: 0.85rem; outline: none;
+      transition: border-color 0.15s; background: white; color: #374151;
+    }
+    .dl-input:focus { border-color: #818cf8; }
+
+    .dl-transcript {
+      margin-top: 0.5rem; padding: 0.5rem 0.75rem;
+      background: #f8fafc; border-radius: 0.5rem; border: 1px solid #e2e8f0;
+      font-size: 0.82rem; color: #475569; font-style: italic;
+    }
+
+    .dl-photo-thumb {
+      max-height: 8rem; border-radius: 0.5rem; object-fit: cover;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Tab bar */
+    .tab-btn-active   { border-bottom: 2px solid #4f46e5; color: #4338ca; font-weight: 700; }
+    .tab-btn-inactive { border-bottom: 2px solid transparent; color: #6b7280; font-weight: 500; }
+    .tab-btn-inactive:hover { color: #374151; }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-900">
@@ -72,7 +147,24 @@
     </div>
   </header>
 
-  <!-- ── MAIN ────────────────────────────────────────────────────────────── -->
+  <!-- ── TAB BAR ─────────────────────────────────────────────────────────── -->
+  <div class="sticky top-[57px] z-10 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 flex gap-0">
+      <button id="tab-btn-search"
+              onclick="switchTab('search')"
+              class="tab-btn tab-btn-active px-5 py-3 text-sm -mb-px transition cursor-pointer bg-transparent border-0">
+        🔍 Search
+      </button>
+      <button id="tab-btn-daily-log"
+              onclick="switchTab('daily-log')"
+              class="tab-btn tab-btn-inactive px-5 py-3 text-sm -mb-px transition cursor-pointer bg-transparent border-0">
+        📋 Daily Log
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SEARCH PANEL ─────────────────────────────────────────────────────── -->
+  <div id="panel-search">
   <main class="max-w-3xl mx-auto px-4 py-8">
 
     <!-- Search form -->
@@ -178,11 +270,188 @@
     </div>
 
   </main>
+  </div><!-- /panel-search -->
+
+  <!-- ── DAILY LOG PANEL ──────────────────────────────────────────────────── -->
+  <div id="panel-daily-log" class="hidden">
+  <main class="max-w-3xl mx-auto px-4 py-6 space-y-4">
+
+    <!-- ── Transcription banner (hidden until a result arrives) ──────────── -->
+    <div id="dl-transcript-banner" class="hidden">
+      <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-3">
+        <span class="text-indigo-400 text-xl mt-0.5">🎙️</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-semibold text-indigo-500 mb-1">Transcription</p>
+          <p id="dl-transcript-text" class="text-sm text-gray-800 leading-relaxed break-words"></p>
+        </div>
+        <button onclick="document.getElementById('dl-transcript-banner').classList.add('hidden')"
+                class="text-gray-400 hover:text-gray-600 text-xl leading-none flex-none">×</button>
+      </div>
+    </div>
+
+    <!-- ── Server transcribe button ───────────────��──────────────────────── -->
+    <div class="dl-card flex items-center gap-4">
+      <button id="dl-record-btn" onclick="dlServerTranscribe()"
+              class="dl-btn-secondary gap-2 py-2.5 px-4 text-sm font-semibold">
+        🎙️ Record &amp; Transcribe
+      </button>
+      <p id="dl-record-status" class="text-xs text-gray-400">Tap to record voice — transcribed by server</p>
+    </div>
+
+    <!-- Date banner -->
+    <div class="text-center text-gray-500 text-sm py-1 font-medium" id="dl-date-banner"></div>
+
+    <!-- ── 1. Mood ─────────────────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">😊 How was today?</div>
+      <div class="flex gap-2 justify-center">
+        <button class="dl-emoji-btn" data-group="mood" data-value="happy"   onclick="dlSelect('mood','happy',this)">😊</button>
+        <button class="dl-emoji-btn" data-group="mood" data-value="neutral" onclick="dlSelect('mood','neutral',this)">😐</button>
+        <button class="dl-emoji-btn" data-group="mood" data-value="upset"   onclick="dlSelect('mood','upset',this)">😣</button>
+        <button class="dl-emoji-btn" data-group="mood" data-value="angry"   onclick="dlSelect('mood','angry',this)">😡</button>
+      </div>
+    </div>
+
+    <!-- ── 2. Food ─────────────────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">🍽️ Food</div>
+      <p class="text-xs text-gray-500 mb-3">How would you like to log food?</p>
+      <div class="flex gap-2 flex-wrap">
+        <button class="dl-btn-secondary" onclick="document.getElementById('food-photo-input').click()">📷 Take Photo</button>
+        <button class="dl-btn-secondary" id="food-voice-btn" onclick="dlVoice('food-voice-btn','food-transcript','foodText')">🎤 Voice Input</button>
+      </div>
+      <input type="file" id="food-photo-input" accept="image/*" capture="environment" class="hidden"
+             onchange="dlPhotoPreview(this,'food-thumb','food-preview-area','foodPhoto')" />
+      <div id="food-preview-area" class="hidden mt-3 flex flex-col gap-2">
+        <img id="food-thumb" class="dl-photo-thumb hidden" />
+        <div id="food-transcript" class="dl-transcript hidden"></div>
+      </div>
+    </div>
+
+    <!-- ── 3. Sleep ────────────────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">😴 Sleep</div>
+      <p class="text-xs text-gray-500 mb-3">How was sleep?</p>
+      <div class="flex gap-2 justify-center mb-3">
+        <button class="dl-emoji-btn" data-group="sleep" data-value="good" onclick="dlSelect('sleep','good',this)">😴 <span class="text-xs font-semibold">Good</span></button>
+        <button class="dl-emoji-btn" data-group="sleep" data-value="ok"   onclick="dlSelect('sleep','ok',this)">😐 <span class="text-xs font-semibold">OK</span></button>
+        <button class="dl-emoji-btn" data-group="sleep" data-value="bad"  onclick="dlSelect('sleep','bad',this)">😫 <span class="text-xs font-semibold">Bad</span></button>
+      </div>
+      <details>
+        <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-700 select-none w-fit">▸ Show details (bedtime, wake-ups…)</summary>
+        <div class="mt-3 grid grid-cols-3 gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500">Bedtime</span>
+            <input type="time" id="dl-bed-time" value="21:30" class="dl-input" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500">Wake time</span>
+            <input type="time" id="dl-wake-time" value="06:45" class="dl-input" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500">Wake-ups</span>
+            <input type="number" id="dl-wake-ups" value="0" min="0" max="20" class="dl-input" />
+          </label>
+        </div>
+      </details>
+    </div>
+
+    <!-- ── 4. Medication ──────────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">💊 Medication / Supplement</div>
+      <p class="text-xs text-gray-500 mb-3">Was medication taken?</p>
+      <div class="flex gap-3">
+        <button class="dl-toggle-btn" id="med-taken-btn"  onclick="dlMed(true)">✅ Taken</button>
+        <button class="dl-toggle-btn" id="med-missed-btn" onclick="dlMed(false)">❌ Missed</button>
+      </div>
+    </div>
+
+    <!-- ── 5. Therapy ─────────────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">🧠 Therapy</div>
+      <p class="text-xs text-gray-500 mb-3">Did therapy happen today?</p>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <label class="dl-checkbox-label"><input type="checkbox" class="therapy-cb" value="ABA" /> ABA</label>
+        <label class="dl-checkbox-label"><input type="checkbox" class="therapy-cb" value="Speech" /> Speech</label>
+        <label class="dl-checkbox-label"><input type="checkbox" class="therapy-cb" value="OT" /> OT</label>
+        <label class="dl-checkbox-label"><input type="checkbox" class="therapy-cb" value="School Support" /> School Support</label>
+      </div>
+      <p class="text-xs text-gray-500 mb-2">How did it go?</p>
+      <div class="flex gap-2 justify-center">
+        <button class="dl-emoji-btn" data-group="therapy-mood" data-value="happy"   onclick="dlSelect('therapyMood','happy',this)">😊</button>
+        <button class="dl-emoji-btn" data-group="therapy-mood" data-value="neutral" onclick="dlSelect('therapyMood','neutral',this)">😐</button>
+        <button class="dl-emoji-btn" data-group="therapy-mood" data-value="upset"   onclick="dlSelect('therapyMood','upset',this)">😣</button>
+      </div>
+    </div>
+
+    <!-- ── 6. Special Event ───────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">⚡ Special Event</div>
+      <p class="text-xs text-gray-500 mb-3">Is there a special event (meltdown, outburst…) to report?</p>
+      <div class="flex gap-3">
+        <button class="dl-toggle-btn" id="event-no-btn"  onclick="dlEvent(false)">No 👍</button>
+        <button class="dl-toggle-btn" id="event-yes-btn" onclick="dlEvent(true)">Yes ⚠️</button>
+      </div>
+
+      <!-- Event details (revealed when Yes) -->
+      <div id="event-details" class="hidden mt-4 space-y-4">
+        <div>
+          <p class="text-xs font-semibold text-gray-600 mb-2">What caused it?</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="dl-checkbox-label"><input type="checkbox" class="cause-cb" value="Noise" /> 🔊 Noise</label>
+            <label class="dl-checkbox-label"><input type="checkbox" class="cause-cb" value="Change in routine" /> 🔄 Change in routine</label>
+            <label class="dl-checkbox-label"><input type="checkbox" class="cause-cb" value="Social stress" /> 👥 Social stress</label>
+            <label class="dl-checkbox-label"><input type="checkbox" class="cause-cb" value="Hunger" /> 🍽️ Hunger</label>
+            <label class="dl-checkbox-label"><input type="checkbox" class="cause-cb" value="Unknown" /> ❓ Unknown</label>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-600 mb-2">Add more details:</p>
+          <div class="flex gap-2 flex-wrap">
+            <button class="dl-btn-secondary" id="event-voice-btn" onclick="dlVoice('event-voice-btn','event-transcript','eventNotes')">🎤 Voice</button>
+            <button class="dl-btn-secondary" onclick="dlToggleText('event-text-area')">✍️ Text</button>
+          </div>
+          <textarea id="event-text-area" class="dl-input hidden mt-2" rows="3"
+                    placeholder="Describe what happened…"></textarea>
+          <div id="event-transcript" class="dl-transcript hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 7. Additional Notes ────────────────────────────────────────── -->
+    <div class="dl-card">
+      <div class="dl-section-title">📝 Additional Notes</div>
+      <p class="text-xs text-gray-500 mb-3">Anything else to add?</p>
+      <div class="flex gap-2 flex-wrap">
+        <button class="dl-btn-secondary" id="extra-voice-btn" onclick="dlVoice('extra-voice-btn','extra-transcript','extraNotes')">🎤 Voice</button>
+        <button class="dl-btn-secondary" onclick="document.getElementById('extra-photo-input').click()">📷 Photo</button>
+        <button class="dl-btn-secondary" onclick="dlToggleText('extra-text-area')">✍️ Text</button>
+      </div>
+      <input type="file" id="extra-photo-input" accept="image/*" capture="environment" class="hidden"
+             onchange="dlPhotoPreview(this,'extra-thumb','extra-preview-area','extraPhoto')" />
+      <div id="extra-preview-area" class="hidden mt-3 flex flex-col gap-2">
+        <img id="extra-thumb" class="dl-photo-thumb hidden" />
+        <div id="extra-transcript" class="dl-transcript hidden"></div>
+      </div>
+      <textarea id="extra-text-area" class="dl-input hidden mt-2" rows="3"
+                placeholder="Anything else…"></textarea>
+    </div>
+
+    <!-- ── Submit ─────────────────────────────────────────────────────── -->
+    <button id="dl-submit-btn" onclick="dlSubmit()"
+            class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold
+                   rounded-2xl text-base transition flex items-center justify-center gap-2 shadow-sm">
+      Submit ✅
+    </button>
+    <div id="dl-submit-status" class="hidden text-center text-sm pb-4"></div>
+
+  </main>
+  </div><!-- /panel-daily-log -->
 
   <!-- ── SCRIPTS ─────────────────────────────────────────────────────────── -->
   <script>
     // ── Search API base URL ────────────────────────────────────────────────
-    const API_BASE = 'http://192.168.1.9:3001';
+    const API_BASE = 'https://192.168.68.117:3001';
 
     // ── Source badge colours ───────────────────────────────────────────────
     const SOURCE_COLORS = {
@@ -710,8 +979,301 @@
     // Initial state
     document.getElementById('ask-btn').disabled = true;
 
+    // ════════════════════════════════════════════════════════════════════
+    // TAB SWITCHING
+    // ════════════════════════════════════════════════════════════════════
+    function switchTab(name) {
+      ['search','daily-log'].forEach(t => {
+        document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (t === name) {
+          btn.classList.remove('tab-btn-inactive');
+          btn.classList.add('tab-btn-active');
+        } else {
+          btn.classList.remove('tab-btn-active');
+          btn.classList.add('tab-btn-inactive');
+        }
+      });
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // DAILY LOG STATE
+    // ════════════════════════════════════════════════════════════════════
+    const dlState = {};
+    let dlActiveRecognition = null;
+
+    // ── Emoji / value single-select ──────────────────────────────────────
+    function dlSelect(key, value, el) {
+      dlState[key] = value;
+      const group = el.dataset.group;
+      document.querySelectorAll(`[data-group="${group}"]`).forEach(b => {
+        b.classList.toggle('selected', b === el);
+      });
+    }
+
+    // ── Medication toggle ────────────────────────────────────────────────
+    function dlMed(taken) {
+      dlState.medicationTaken = taken;
+      const takenBtn  = document.getElementById('med-taken-btn');
+      const missedBtn = document.getElementById('med-missed-btn');
+      takenBtn.className  = 'dl-toggle-btn' + (taken  ? ' selected-taken'  : '');
+      missedBtn.className = 'dl-toggle-btn' + (!taken ? ' selected-missed' : '');
+    }
+
+    // ── Special event toggle ─────────────────────────────────────────────
+    function dlEvent(hasEvent) {
+      dlState.specialEvent = hasEvent;
+      const noBtn  = document.getElementById('event-no-btn');
+      const yesBtn = document.getElementById('event-yes-btn');
+      noBtn.className  = 'dl-toggle-btn' + (!hasEvent ? ' selected-no'  : '');
+      yesBtn.className = 'dl-toggle-btn' + (hasEvent  ? ' selected-yes' : '');
+      document.getElementById('event-details').classList.toggle('hidden', !hasEvent);
+    }
+
+    // ── Toggle a textarea visible/hidden ────────────────────────────────
+    function dlToggleText(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
+      if (!el.classList.contains('hidden')) el.focus();
+    }
+
+    // ── Photo preview ────────────────────────────────────────────────────
+    function dlPhotoPreview(input, thumbId, areaId, stateKey) {
+      const file = input.files[0];
+      if (!file) return;
+      dlState[stateKey] = file;
+      const thumb = document.getElementById(thumbId);
+      thumb.src = URL.createObjectURL(file);
+      thumb.classList.remove('hidden');
+      document.getElementById(areaId).classList.remove('hidden');
+    }
+
+    // ── Voice input (Web Speech API) ─────────────────────────────────────
+    function dlVoice(btnId, transcriptId, stateKey) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        alert('Voice input is not supported in this browser.\nTry Chrome on Android or desktop.');
+        return;
+      }
+      const btn = document.getElementById(btnId);
+
+      // If already recording — stop
+      if (dlActiveRecognition) {
+        dlActiveRecognition.stop();
+        dlActiveRecognition = null;
+        btn.textContent = btn.textContent.replace('⏹ Stop', '🎤 Voice Input').replace('⏹ Stop', '🎤 Voice');
+        btn.classList.remove('recording');
+        return;
+      }
+
+      const recognition = new SR();
+      recognition.lang = 'zh-CN';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      dlActiveRecognition = recognition;
+
+      const origLabel = btn.textContent;
+      btn.textContent = '⏹ Stop';
+      btn.classList.add('recording');
+
+      const transcriptEl = document.getElementById(transcriptId);
+      transcriptEl.classList.remove('hidden');
+      transcriptEl.textContent = '…';
+
+      recognition.onresult = (e) => {
+        let interim = '', final = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) final += t; else interim += t;
+        }
+        transcriptEl.textContent = final || interim;
+        if (final) dlState[stateKey] = final;
+      };
+
+      recognition.onend = () => {
+        btn.textContent = origLabel;
+        btn.classList.remove('recording');
+        dlActiveRecognition = null;
+      };
+
+      recognition.onerror = (e) => {
+        transcriptEl.textContent = '⚠️ Error: ' + e.error;
+        btn.textContent = origLabel;
+        btn.classList.remove('recording');
+        dlActiveRecognition = null;
+      };
+
+      recognition.start();
+    }
+
+    // ── Submit → save to localStorage ───────────────────────────────────
+    function dlSubmit() {
+      const btn    = document.getElementById('dl-submit-btn');
+      const status = document.getElementById('dl-submit-status');
+
+      const entry = {
+        date:            document.getElementById('dl-date-input').value,
+        mood:            dlState.mood            || null,
+        foodText:        dlState.foodText        || null,
+        foodPhoto:       dlState.foodPhoto       ? dlState.foodPhoto.name : null,
+        sleepQuality:    dlState.sleep           || null,
+        bedTime:         document.getElementById('dl-bed-time').value  || null,
+        wakeTime:        document.getElementById('dl-wake-time').value || null,
+        wakeUps:         parseInt(document.getElementById('dl-wake-ups').value) || 0,
+        medicationTaken: dlState.medicationTaken ?? null,
+        therapyDone:     [...document.querySelectorAll('.therapy-cb:checked')].map(c => c.value),
+        therapyMood:     dlState.therapyMood     || null,
+        specialEvent:    dlState.specialEvent    ?? null,
+        eventCauses:     [...document.querySelectorAll('.cause-cb:checked')].map(c => c.value),
+        eventNotes:      dlState.eventNotes      || document.getElementById('event-text-area').value || null,
+        extraNotes:      dlState.extraNotes      || document.getElementById('extra-text-area').value || null,
+        savedAt:         new Date().toISOString(),
+      };
+
+      // Persist to localStorage
+      const logs = JSON.parse(localStorage.getItem('autism-daily-logs') || '[]');
+      logs.unshift(entry);
+      localStorage.setItem('autism-daily-logs', JSON.stringify(logs));
+
+      // Feedback
+      btn.disabled = true;
+      status.textContent = '✅ Log saved! (' + logs.length + ' total)';
+      status.className = 'text-green-600 text-sm text-center mt-1 font-medium';
+      status.classList.remove('hidden');
+
+      setTimeout(() => {
+        btn.disabled = false;
+        status.classList.add('hidden');
+        dlReset();
+      }, 2500);
+    }
+
+    // ── Reset the entire form ────────────────────────────────────────────
+    function dlReset() {
+      Object.keys(dlState).forEach(k => delete dlState[k]);
+
+      // Deselect all emoji / toggle buttons
+      document.querySelectorAll('.dl-emoji-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.dl-toggle-btn').forEach(b => {
+        b.className = 'dl-toggle-btn';
+      });
+
+      // Uncheck all checkboxes
+      document.querySelectorAll('.therapy-cb, .cause-cb').forEach(c => c.checked = false);
+
+      // Clear textareas
+      ['event-text-area','extra-text-area'].forEach(id => {
+        const el = document.getElementById(id);
+        el.value = '';
+        el.classList.add('hidden');
+      });
+
+      // Hide transcripts & previews
+      ['food-transcript','event-transcript','extra-transcript'].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = '';
+        el.classList.add('hidden');
+      });
+      ['food-preview-area','extra-preview-area'].forEach(id =>
+        document.getElementById(id).classList.add('hidden'));
+      ['food-thumb','extra-thumb'].forEach(id =>
+        document.getElementById(id).classList.add('hidden'));
+
+      // Hide event details
+      document.getElementById('event-details').classList.add('hidden');
+
+      // Reset file inputs
+      ['food-photo-input','extra-photo-input'].forEach(id =>
+        document.getElementById(id).value = '');
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // SERVER TRANSCRIPTION  (collect API → faster-whisper)
+    // ════════════════════════════════════════════════════════════════════
+    const COLLECT_API = '/collect';
+
+    let mediaRecorder = null;
+    let audioChunks   = [];
+
+    async function dlServerTranscribe() {
+      const btn    = document.getElementById('dl-record-btn');
+      const status = document.getElementById('dl-record-status');
+
+      // ── If already recording → stop and send ──────────────────────────
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+      }
+
+      // ── Start recording ───────────────────────────────────────────────
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        status.textContent = '⚠️ Mic access denied: ' + err.message;
+        return;
+      }
+
+      audioChunks  = [];
+      mediaRecorder = new MediaRecorder(stream);
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        btn.textContent  = '🎙️ Record & Transcribe';
+        btn.classList.remove('recording');
+        status.textContent = '⏳ Transcribing…';
+
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const fd   = new FormData();
+        fd.append('audio', blob, 'recording.webm');
+
+        try {
+          const res  = await fetch(COLLECT_API + '/transcribe', { method: 'POST', body: fd });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'HTTP ' + res.status);
+          }
+          const data = await res.json();
+          dlShowTranscript(data.text || '(no speech detected)');
+          status.textContent = `✅ Done (${data.duration}s, lang: ${data.language})`;
+        } catch (err) {
+          dlShowTranscript('⚠️ ' + err.message);
+          status.textContent = '❌ Transcription failed';
+        }
+      };
+
+      mediaRecorder.start();
+      btn.textContent = '⏹ Stop Recording';
+      btn.classList.add('recording');
+      status.textContent = '🔴 Recording… tap again to stop';
+    }
+
+    function dlShowTranscript(text) {
+      document.getElementById('dl-transcript-text').textContent = text;
+      document.getElementById('dl-transcript-banner').classList.remove('hidden');
+      // Scroll to top of Daily Log panel so banner is visible
+      document.getElementById('panel-daily-log').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     // ── On page load: stats + health ───────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
+
+      // Daily Log — set today's date
+      (function() {
+        const today = new Date();
+        const iso   = today.toISOString().split('T')[0];
+        const label = today.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+        const banner = document.getElementById('dl-date-banner');
+        if (banner) banner.textContent = 'Today — ' + label;
+        // hidden input for form submission
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.id = 'dl-date-input'; inp.value = iso;
+        document.getElementById('panel-daily-log').appendChild(inp);
+      })();
 
       // Stats badge
       fetch(API_BASE + '/api/stats')

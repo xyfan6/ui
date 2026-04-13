@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 
-HOST="192.168.1.9"
 PORT=18000
 PIDFILE=".serve.pid"
 LOGFILE="serve.log"
+
+get_local_ip() {
+    # Try Linux first, then macOS, then fall back to localhost
+    ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}' \
+    || ipconfig getifaddr en0 2>/dev/null \
+    || ipconfig getifaddr en1 2>/dev/null \
+    || hostname -I 2>/dev/null | awk '{print $1}' \
+    || echo "127.0.0.1"
+}
 
 port_pid() {
     # Return the PID of whatever process is bound to $PORT (empty if none)
@@ -36,8 +44,10 @@ start_service() {
     done
 
     if is_running; then
+        local ip
+        ip=$(get_local_ip)
         echo "  ✅  Service started (PID $(cat $PIDFILE))"
-        echo "  🌐  UI: http://$HOST:$PORT/"
+        echo "  🌐  UI: https://$ip:$PORT/"
         echo "  📄  Logs: $LOGFILE"
     else
         echo "  ❌  Failed to start — check $LOGFILE for details"
@@ -92,9 +102,11 @@ service_status() {
     pid=$(port_pid)
 
     if [ -n "$pid" ]; then
+        local ip
+        ip=$(get_local_ip)
         echo "  ✅  Service is running"
         echo "  🔢  PID:  $pid"
-        echo "  🌐  URL:  http://$HOST:$PORT/"
+        echo "  🌐  URL:  https://$ip:$PORT/"
 
         # Uptime via /proc
         if [ -f "/proc/$pid/stat" ]; then
@@ -111,7 +123,7 @@ service_status() {
 
         # HTTP reachability
         local http_code
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://$HOST:$PORT/" 2>/dev/null)
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 -k "https://127.0.0.1:$PORT/" 2>/dev/null)
         if [ "$http_code" = "200" ]; then
             echo "  💚  HTTP: OK (200)"
         else
