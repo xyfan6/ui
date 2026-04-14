@@ -32,7 +32,7 @@ start_service() {
         stop_service
     fi
 
-    nohup python3 serve.py > "$LOGFILE" 2>&1 &
+    nohup python3 -u serve.py > "$LOGFILE" 2>&1 &
     echo $! > "$PIDFILE"
 
     # Wait up to 3 seconds for the port to open
